@@ -24,6 +24,59 @@ See each notebook's own summary section for the full reasoning behind these resu
 
 ---
 
+## How to Run
+
+There are two parts to look at: the **notebooks** (analysis and matplotlib charts) and the **Power BI dashboard** (interactive report pages). The cleaned CSVs in `Data/processed/` are already committed, so you can open the dashboard without running any notebook first.
+
+### 1. Get the project
+
+```bash
+git clone https://github.com/asthabomble/DineSmart.git
+cd DineSmart
+```
+
+### 2. View the charts in the notebooks
+
+The notebooks are saved with their outputs, so you can see every chart without running anything: open any `.ipynb` file under [`notebooks/`](notebooks/) on GitHub or in VS Code.
+
+To re-run them yourself (Python 3.11+ recommended):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cd notebooks
+jupyter notebook                   # or: jupyter lab
+```
+
+Start Jupyter from inside `notebooks/`, because the notebooks read `Data/processed/` through relative paths. Run them in this order, using **Kernel > Restart & Run All** for each:
+
+1. `data_preprocessing.ipynb`: rebuilds everything in `Data/processed/` from `Data/raw/`
+2. `exploratory_analysis.ipynb`: revenue, order, customer, restaurant and delivery trend charts
+3. `customer_segmentation.ipynb`: K-Means segments (writes `customer_segments.csv`)
+4. `market_basket_analysis.ipynb`: Apriori rules (writes `association_rules.csv`)
+5. `customer_prediction.ipynb`: retention models (writes `customer_retention_predictions.csv`)
+
+In VS Code you can instead open a notebook, pick the `.venv` interpreter as the kernel, and click **Run All**. Make sure the notebook's working directory is `notebooks/`.
+
+### 3. Open the Power BI dashboard
+
+The dashboard needs **Power BI Desktop**, which is free but **Windows only** (on macOS or Linux, use a Windows VM).
+
+1. Install Power BI Desktop from the Microsoft Store or the [Microsoft download page](https://www.microsoft.com/power-platform/products/power-bi/desktop).
+2. In Power BI Desktop, go to **File > Options and settings > Options > Preview features** and enable these if they are listed, then restart:
+   - Power BI Project (.pbip) save option
+   - Store semantic model using TMDL format
+   - Store reports using enhanced metadata format (PBIR)
+3. Open **`dashboard/DineSmart.pbip`**.
+4. Go to **Home > Transform data > Edit parameters** and set **DataFolder** to the full path of your `Data\processed\` folder, **ending with a backslash**, e.g. `C:\Users\you\DineSmart\Data\processed\`. If you cloned the repo to `C:\DineSmart`, the default value already works and you can skip this step.
+5. Click **Home > Refresh**. The report is empty until the first refresh.
+6. Use the page tabs at the bottom to switch between **Business Overview**, **Customer Analytics**, **Food & Restaurant Analytics**, **Market Basket Analysis** and **Delivery Performance**.
+
+To check that the data loaded correctly, compare the KPI cards with the expected values in [`dashboard/README.md`](dashboard/README.md#check-the-numbers-after-the-first-refresh) (for example, Total Revenue should be ₹963,846,486 and Total Orders 146,979). To share the report as a single file, use **File > Save as** and choose `.pbix`.
+
+---
+
 ## Problem Statement
 
 Food delivery platforms generate large volumes of data from customer orders, restaurants, food categories, ratings, delivery times, locations, and purchasing behavior.
