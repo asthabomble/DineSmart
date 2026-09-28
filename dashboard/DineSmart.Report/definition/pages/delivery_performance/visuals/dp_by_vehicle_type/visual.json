@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "dp_by_vehicle_condition",
+  "name": "dp_by_vehicle_type",
   "position": {
-    "x": 332,
+    "x": 964,
     "y": 432,
-    "z": 2004,
+    "z": 2006,
     "width": 300,
     "height": 224,
-    "tabOrder": 2004
+    "tabOrder": 2006
   },
   "visual": {
-    "visualType": "columnChart",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
         "Category": {
@@ -23,10 +23,10 @@
                       "Entity": "DeliveryOps"
                     }
                   },
-                  "Property": "vehicle_condition"
+                  "Property": "type_of_vehicle"
                 }
               },
-              "queryRef": "DeliveryOps.vehicle_condition",
+              "queryRef": "DeliveryOps.type_of_vehicle",
               "active": true
             }
           ]
@@ -53,16 +53,16 @@
         "sort": [
           {
             "field": {
-              "Column": {
+              "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "DeliveryOps"
+                    "Entity": "Key Measures"
                   }
                 },
-                "Property": "vehicle_condition"
+                "Property": "Avg Delivery Time (min)"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -81,7 +81,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'By vehicle condition (0 = worst)'"
+                  "Value": "'By vehicle type'"
                 }
               }
             }

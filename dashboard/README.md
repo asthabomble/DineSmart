@@ -28,7 +28,7 @@ The design follows [`data_model.md`](data_model.md).
 | **Customer Analytics** | Ordering vs registered customers, avg spend, high-value revenue share, actual retention rate; customers / spend / revenue share by segment; spend and retention by monthly income |
 | **Food & Restaurant Analytics** | Restaurant count, cities, avg rating, % rated, median cost for two; rating and cost-for-two distributions; revenue by city (top 10 + full table); avg rating for the 15 largest cuisines |
 | **Market Basket Analysis** | Orders, revenue, items per order, % discounted, avg rating, cancellation rate; association rules table sorted by lift; basket-size distribution; orders by hour of day; undelivered orders by status; rating distribution |
-| **Delivery Performance** | Deliveries, avg delivery time, festival delay, % heavily stacked trips, avg rider rating; avg delivery time by traffic, stacked orders, festival, weather, vehicle condition, area type |
+| **Delivery Performance** | Deliveries, avg delivery time, festival delay, % heavily stacked trips, avg rider rating; avg delivery time by traffic, stacked orders, festival, weather, vehicle type, vehicle condition, area type |
 
 The first three pages use the Zomato_Database data. The last two each use their own separate dataset: Food Delivery Order History for Market Basket Analysis, and Zomato Delivery Operations for Delivery Performance. The datasets don't share IDs, so a page's filters only affect that page's own data.
 
