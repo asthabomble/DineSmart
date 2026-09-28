@@ -1,0 +1,261 @@
+/// Home for every DAX measure (Domain 1: Zomato_Database). See dashboard/data_model.md.
+table 'Key Measures'
+
+	measure 'Total Orders' = COUNTROWS ( Orders )
+		formatString: #,0
+		displayFolder: Business Overview
+
+	measure 'Total Revenue' = SUM ( Orders[sales_amount] )
+		formatString: "₹"#,0
+		displayFolder: Business Overview
+
+	measure 'Average Order Value' = DIVIDE ( [Total Revenue], [Total Orders] )
+		formatString: "₹"#,0
+		displayFolder: Business Overview
+
+	/// Revenue in the first 12 months of order history. Ignores slicers so the trend card is fixed.
+	measure 'Revenue First 12 Months' =
+			VAR FirstDate = CALCULATE ( MIN ( Orders[order_date] ), REMOVEFILTERS () )
+			RETURN
+				CALCULATE (
+					[Total Revenue],
+					REMOVEFILTERS (),
+					DATESBETWEEN ( 'Calendar'[Date], FirstDate, EDATE ( FirstDate, 12 ) - 1 )
+				)
+		formatString: "₹"#,0
+		displayFolder: Business Overview\Trend
+
+	/// Revenue in the last 12 months of order history. Ignores slicers so the trend card is fixed.
+	measure 'Revenue Last 12 Months' =
+			VAR LastDate = CALCULATE ( MAX ( Orders[order_date] ), REMOVEFILTERS () )
+			RETURN
+				CALCULATE (
+					[Total Revenue],
+					REMOVEFILTERS (),
+					DATESBETWEEN ( 'Calendar'[Date], EDATE ( LastDate, -12 ) + 1, LastDate )
+				)
+		formatString: "₹"#,0
+		displayFolder: Business Overview\Trend
+
+	/// Last 12 months vs first 12 months. About -24% on this dataset.
+	measure 'Revenue Change (Last vs First 12M)' = DIVIDE ( [Revenue Last 12 Months] - [Revenue First 12 Months], [Revenue First 12 Months] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: Business Overview\Trend
+
+	measure 'Orders First 12 Months' =
+			VAR FirstDate = CALCULATE ( MIN ( Orders[order_date] ), REMOVEFILTERS () )
+			RETURN
+				CALCULATE (
+					[Total Orders],
+					REMOVEFILTERS (),
+					DATESBETWEEN ( 'Calendar'[Date], FirstDate, EDATE ( FirstDate, 12 ) - 1 )
+				)
+		formatString: #,0
+		displayFolder: Business Overview\Trend
+
+	measure 'Orders Last 12 Months' =
+			VAR LastDate = CALCULATE ( MAX ( Orders[order_date] ), REMOVEFILTERS () )
+			RETURN
+				CALCULATE (
+					[Total Orders],
+					REMOVEFILTERS (),
+					DATESBETWEEN ( 'Calendar'[Date], EDATE ( LastDate, -12 ) + 1, LastDate )
+				)
+		formatString: #,0
+		displayFolder: Business Overview\Trend
+
+	/// Last 12 months vs first 12 months. About -26% on this dataset.
+	measure 'Orders Change (Last vs First 12M)' = DIVIDE ( [Orders Last 12 Months] - [Orders First 12 Months], [Orders First 12 Months] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: Business Overview\Trend
+
+	measure 'Total Registered Customers' = COUNTROWS ( Customers )
+		formatString: #,0
+		displayFolder: Customer Analytics
+
+	/// Customers who ordered in the current filter context (respects the date slicer).
+	measure 'Customers With Orders' = DISTINCTCOUNT ( Orders[user_id] )
+		formatString: #,0
+		displayFolder: Customer Analytics
+
+	/// Lifetime count of customers with at least one order - use with Customers[segment].
+	measure 'Ordering Customers' = CALCULATE ( COUNTROWS ( Customers ), NOT ISBLANK ( Customers[total_orders] ) )
+		formatString: #,0
+		displayFolder: Customer Analytics
+
+	/// AVERAGE ignores blanks, so this is scoped to ordering customers automatically.
+	measure 'Avg Customer Spend' = AVERAGE ( Customers[total_spending] )
+		formatString: "₹"#,0
+		displayFolder: Customer Analytics
+
+	/// Lifetime spend, from customer_segments. Sums to Total Revenue across all segments.
+	measure 'Segment Revenue' = SUM ( Customers[total_spending] )
+		formatString: "₹"#,0
+		displayFolder: Customer Analytics
+
+	measure 'Segment Revenue Share' =
+			DIVIDE (
+				[Segment Revenue],
+				CALCULATE ( [Segment Revenue], REMOVEFILTERS ( Customers[segment], Customers[segment_order] ) )
+			)
+		formatString: 0.0%
+		displayFolder: Customer Analytics
+
+	measure 'High-Value Revenue Share' =
+			DIVIDE (
+				CALCULATE ( [Segment Revenue], Customers[segment] = "High-value" ),
+				CALCULATE ( [Segment Revenue], REMOVEFILTERS ( Customers[segment], Customers[segment_order] ) )
+			)
+		formatString: 0.0%
+		displayFolder: Customer Analytics
+
+	measure 'High-Value Customers' = CALCULATE ( COUNTROWS ( Customers ), Customers[segment] = "High-value" )
+		formatString: #,0
+		displayFolder: Customer Analytics\Segments
+
+	measure 'Regular Customers' = CALCULATE ( COUNTROWS ( Customers ), Customers[segment] = "Regular" )
+		formatString: #,0
+		displayFolder: Customer Analytics\Segments
+
+	measure 'Occasional Customers' = CALCULATE ( COUNTROWS ( Customers ), Customers[segment] = "Occasional" )
+		formatString: #,0
+		displayFolder: Customer Analytics\Segments
+
+	measure 'At-Risk Customers' = CALCULATE ( COUNTROWS ( Customers ), Customers[segment] = "At-risk" )
+		formatString: #,0
+		displayFolder: Customer Analytics\Segments
+
+	/// Actual share of customers who ordered again in the final 180 days. The headline retention KPI.
+	measure 'Historical Retention Rate' =
+			DIVIDE (
+				CALCULATE ( COUNTROWS ( Customers ), Customers[retained] = 1 ),
+				CALCULATE ( COUNTROWS ( Customers ), NOT ISBLANK ( Customers[retained] ) )
+			)
+		formatString: 0.0%
+		displayFolder: Customer Analytics
+
+	/// EXPERIMENTAL - the model is at chance level (ROC-AUC ~0.5). Not shown on the dashboard.
+	measure 'Avg Predicted Retention Probability' = AVERAGE ( Customers[retention_probability] )
+		formatString: 0.0%
+		displayFolder: Customer Analytics
+
+	measure 'Total Restaurants' = COUNTROWS ( Restaurants )
+		formatString: #,0
+		displayFolder: Food & Restaurant Analytics
+
+	/// Average over rated restaurants only (blank ratings are ignored).
+	measure 'Avg Restaurant Rating' = AVERAGE ( Restaurants[rating] )
+		formatString: 0.00
+		displayFolder: Food & Restaurant Analytics
+
+	measure 'Share of Restaurants Rated' = DIVIDE ( COUNT ( Restaurants[rating] ), COUNTROWS ( Restaurants ) )
+		formatString: 0.0%
+		displayFolder: Food & Restaurant Analytics
+
+	/// Skewed by outliers (max ~300,000) - prefer Median Cost For Two on cards.
+	measure 'Avg Cost For Two' = AVERAGE ( Restaurants[cost_for_two] )
+		formatString: "₹"#,0
+		displayFolder: Food & Restaurant Analytics
+
+	measure 'Median Cost For Two' = MEDIAN ( Restaurants[cost_for_two] )
+		formatString: "₹"#,0
+		displayFolder: Food & Restaurant Analytics
+
+	measure 'Cities Served' = DISTINCTCOUNT ( Restaurants[metro] )
+		formatString: #,0
+		displayFolder: Food & Restaurant Analytics
+
+	/// Use on a RestaurantCuisines[cuisine] axis only.
+	measure 'Restaurants Serving Cuisine' = DISTINCTCOUNT ( RestaurantCuisines[r_id] )
+		formatString: #,0
+		displayFolder: Food & Restaurant Analytics
+
+	/// Use on a RestaurantCuisines[cuisine] axis only.
+	measure 'Avg Rating by Cuisine' = AVERAGE ( RestaurantCuisines[rating] )
+		formatString: 0.00
+		displayFolder: Food & Restaurant Analytics
+
+	measure 'OH Total Orders' = COUNTROWS ( OrderHistory )
+		formatString: #,0
+		displayFolder: Market Basket Analysis
+
+	measure 'OH Total Revenue' = SUM ( OrderHistory[total] )
+		formatString: "₹"#,0
+		displayFolder: Market Basket Analysis
+
+	measure 'OH Avg Items Per Order' = AVERAGE ( OrderHistory[item_count] )
+		formatString: 0.00
+		displayFolder: Market Basket Analysis
+
+	/// Average over rated orders only - about 12% of orders carry a rating.
+	measure 'OH Avg Rating' = AVERAGE ( OrderHistory[rating] )
+		formatString: 0.00
+		displayFolder: Market Basket Analysis
+
+	measure 'OH Rated Orders' = CALCULATE ( [OH Total Orders], NOT ISBLANK ( OrderHistory[rating] ) )
+		formatString: #,0
+		displayFolder: Market Basket Analysis
+
+	measure 'OH Discounted Share' = DIVIDE ( CALCULATE ( [OH Total Orders], OrderHistory[has_discount] = TRUE () ), [OH Total Orders] )
+		formatString: 0.0%
+		displayFolder: Market Basket Analysis
+
+	measure 'OH Cancellation Rate' =
+			DIVIDE (
+				CALCULATE ( [OH Total Orders], OrderHistory[order_status] IN { "Returned", "Rejected", "Timed out" } ),
+				[OH Total Orders]
+			)
+		formatString: 0.00%
+		displayFolder: Market Basket Analysis
+
+	/// KEEPFILTERS so it still splits correctly on an order_status axis.
+	measure 'OH Undelivered Orders' = CALCULATE ( [OH Total Orders], KEEPFILTERS ( OrderHistory[order_status] <> "Delivered" ) )
+		formatString: #,0
+		displayFolder: Market Basket Analysis
+
+	measure 'Association Rules' = COUNTROWS ( AssociationRules )
+		formatString: #,0
+		displayFolder: Market Basket Analysis
+
+	measure 'Total Deliveries' = COUNTROWS ( DeliveryOps )
+		formatString: #,0
+		displayFolder: Delivery Performance
+
+	measure 'Avg Delivery Time (min)' = AVERAGE ( DeliveryOps[time_taken_min] )
+		formatString: 0.0
+		displayFolder: Delivery Performance
+
+	measure 'Festival Deliveries' = CALCULATE ( COUNTROWS ( DeliveryOps ), DeliveryOps[festival] = "Yes" )
+		formatString: #,0
+		displayFolder: Delivery Performance
+
+	/// Extra minutes a festival-day delivery takes vs a normal day. About +19.5 on this dataset.
+	measure 'Festival Delay (min)' =
+			CALCULATE ( [Avg Delivery Time (min)], DeliveryOps[festival] = "Yes" )
+				- CALCULATE ( [Avg Delivery Time (min)], DeliveryOps[festival] = "No" )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: Delivery Performance
+
+	/// Share of deliveries where the rider carried 2 or more other orders.
+	measure 'Heavily Stacked Share' = DIVIDE ( CALCULATE ( [Total Deliveries], DeliveryOps[multiple_deliveries] >= 2 ), [Total Deliveries] )
+		formatString: 0.0%
+		displayFolder: Delivery Performance
+
+	/// Excludes the 53 invalid ratings above 5.
+	measure 'Avg Rider Rating' = CALCULATE ( AVERAGE ( DeliveryOps[delivery_person_ratings] ), DeliveryOps[delivery_person_ratings] <= 5 )
+		formatString: 0.00
+		displayFolder: Delivery Performance
+
+	column Placeholder
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: Placeholder
+
+	partition 'Key Measures' = m
+		mode: import
+		source = #table(type table [Placeholder = Int64.Type], {})
+
+	annotation PBI_ResultType = Table
+

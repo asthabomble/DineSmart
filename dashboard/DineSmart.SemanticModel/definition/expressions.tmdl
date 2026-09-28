@@ -1,0 +1,7 @@
+/// Absolute path to DineSmart's Data/processed folder, ending in a backslash.
+/// Power BI can't use paths relative to the project, so set this once per machine:
+/// Home > Transform data > Edit parameters.
+expression DataFolder = "C:\DineSmart\Data\processed\" meta [IsParameterQuery = true, Type = "Text", IsParameterQueryRequired = true]
+
+	annotation PBI_ResultType = Text
+

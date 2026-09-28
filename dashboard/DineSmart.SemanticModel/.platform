@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "DineSmart"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "ba0d5eea-55ab-4fb8-82b4-ede64f5a5f4a"
+  }
+}

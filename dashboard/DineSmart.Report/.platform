@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "DineSmart"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "91c31796-0f9f-40d4-b985-f2907b80da75"
+  }
+}

@@ -1,0 +1,76 @@
+/// One row per transaction from orders_clean (Oct 2017 - Jun 2020).
+table Orders
+
+	column order_date
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: order_date
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	/// Year of order_date. Used for the Zomato pages' year slicers, so they only list 2017-2020
+	/// rather than every year the shared Calendar spans.
+	column order_year = YEAR ( [order_date] )
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+
+	column sales_qty
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: sales_qty
+
+	column sales_amount
+		dataType: int64
+		formatString: "₹"#,0
+		summarizeBy: none
+		sourceColumn: sales_amount
+
+	/// INR for all but 2 rows (USD, ₹750 total) - left in Total Revenue as-is.
+	column currency
+		dataType: string
+		summarizeBy: none
+		sourceColumn: currency
+
+	column user_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: user_id
+
+	column r_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: r_id
+
+	partition Orders = m
+		mode: import
+		source =
+				let
+					Source = Table.PromoteHeaders(
+						Csv.Document(
+							File.Contents(DataFolder & "orders_clean.csv"),
+							[Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]
+						),
+						[PromoteAllScalars = true]
+					),
+					Typed = Table.TransformColumnTypes(
+						Source,
+						{
+							{"order_date", type date}, {"sales_qty", Int64.Type}, {"sales_amount", Int64.Type},
+							{"currency", type text}, {"user_id", Int64.Type}, {"r_id", Int64.Type}
+						},
+						"en-US"
+					),
+					// Most rows store currency as a quoted "INR<CR>" - strip the stray carriage return.
+					CleanCurrency = Table.TransformColumns(Typed, {{"currency", each Text.Trim(Text.Clean(_)), type text}})
+				in
+					CleanCurrency
+
+	annotation PBI_ResultType = Table
+

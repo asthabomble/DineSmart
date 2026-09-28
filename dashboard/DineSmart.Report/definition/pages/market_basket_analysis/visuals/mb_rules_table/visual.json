@@ -1,0 +1,128 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "mb_rules_table",
+  "position": {
+    "x": 16,
+    "y": 180,
+    "z": 2000,
+    "width": 760,
+    "height": 244,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AssociationRules"
+                    }
+                  },
+                  "Property": "antecedents"
+                }
+              },
+              "queryRef": "AssociationRules.antecedents"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AssociationRules"
+                    }
+                  },
+                  "Property": "consequents"
+                }
+              },
+              "queryRef": "AssociationRules.consequents"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AssociationRules"
+                    }
+                  },
+                  "Property": "support"
+                }
+              },
+              "queryRef": "AssociationRules.support"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AssociationRules"
+                    }
+                  },
+                  "Property": "confidence"
+                }
+              },
+              "queryRef": "AssociationRules.confidence"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AssociationRules"
+                    }
+                  },
+                  "Property": "lift"
+                }
+              },
+              "queryRef": "AssociationRules.lift"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "AssociationRules"
+                  }
+                },
+                "Property": "lift"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Frequently ordered together - association rules, strongest (highest lift) first'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

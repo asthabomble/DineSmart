@@ -1,0 +1,56 @@
+/// Domain 2: Apriori rules from market_basket_analysis.ipynb (62 rules, min_support 0.003, lift > 1).
+/// Rule grain, not order grain - no relationships.
+table AssociationRules
+
+	column antecedents
+		dataType: string
+		summarizeBy: none
+		sourceColumn: antecedents
+
+	column consequents
+		dataType: string
+		summarizeBy: none
+		sourceColumn: consequents
+
+	column support
+		dataType: double
+		formatString: 0.00%
+		summarizeBy: none
+		sourceColumn: support
+
+	column confidence
+		dataType: double
+		formatString: 0.0%
+		summarizeBy: none
+		sourceColumn: confidence
+
+	column lift
+		dataType: double
+		formatString: 0.00
+		summarizeBy: none
+		sourceColumn: lift
+
+	partition AssociationRules = m
+		mode: import
+		source =
+				let
+					Source = Table.PromoteHeaders(
+						Csv.Document(
+							File.Contents(DataFolder & "association_rules.csv"),
+							[Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]
+						),
+						[PromoteAllScalars = true]
+					),
+					Typed = Table.TransformColumnTypes(
+						Source,
+						{
+							{"antecedents", type text}, {"consequents", type text},
+							{"support", type number}, {"confidence", type number}, {"lift", type number}
+						},
+						"en-US"
+					)
+				in
+					Typed
+
+	annotation PBI_ResultType = Table
+

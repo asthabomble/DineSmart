@@ -1,0 +1,148 @@
+/// Domain 3: one row per delivery from delivery_ops_clean (Zomato Delivery Operations, Feb - Apr 2022).
+/// No customer or restaurant keys - relates only to Calendar.
+table DeliveryOps
+
+	column id
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: id
+
+	column delivery_person_id
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: delivery_person_id
+
+	column delivery_person_age
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: delivery_person_age
+
+	/// Rider rating. 53 rows are above 5 (invalid) - measures exclude them.
+	column delivery_person_ratings
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: delivery_person_ratings
+
+	column order_date
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: order_date
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column weather_conditions
+		dataType: string
+		summarizeBy: none
+		sourceColumn: weather_conditions
+
+	column road_traffic_density
+		dataType: string
+		summarizeBy: none
+		sourceColumn: road_traffic_density
+		sortByColumn: traffic_order
+
+	column traffic_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: traffic_order
+
+	/// 0 = worst, 3 = best (as in the source data).
+	column vehicle_condition
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: vehicle_condition
+
+	column type_of_order
+		dataType: string
+		summarizeBy: none
+		sourceColumn: type_of_order
+
+	column type_of_vehicle
+		dataType: string
+		summarizeBy: none
+		sourceColumn: type_of_vehicle
+
+	/// Number of other orders the rider carried on the same trip.
+	column multiple_deliveries
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: multiple_deliveries
+
+	column festival
+		dataType: string
+		summarizeBy: none
+		sourceColumn: festival
+
+	/// Source column "city" - it's an area type (Metropolitan/Urban/Semi-Urban), not a city name.
+	column area_type
+		dataType: string
+		summarizeBy: none
+		sourceColumn: area_type
+
+	column time_taken_min
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: time_taken_min
+
+	partition DeliveryOps = m
+		mode: import
+		source =
+				let
+					Source = Table.PromoteHeaders(
+						Csv.Document(
+							File.Contents(DataFolder & "delivery_ops_clean.csv"),
+							[Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]
+						),
+						[PromoteAllScalars = true]
+					),
+					Selected = Table.SelectColumns(
+						Source,
+						{
+							"id", "delivery_person_id", "delivery_person_age", "delivery_person_ratings", "order_date",
+							"weather_conditions", "road_traffic_density", "vehicle_condition", "type_of_order",
+							"type_of_vehicle", "multiple_deliveries", "festival", "city", "time_taken_min"
+						}
+					),
+					Typed = Table.TransformColumnTypes(
+						Selected,
+						{
+							{"id", type text}, {"delivery_person_id", type text}, {"delivery_person_age", Int64.Type},
+							{"delivery_person_ratings", type number}, {"order_date", type date},
+							{"weather_conditions", type text}, {"road_traffic_density", type text},
+							{"vehicle_condition", Int64.Type}, {"type_of_order", type text}, {"type_of_vehicle", type text},
+							{"multiple_deliveries", Int64.Type}, {"festival", type text}, {"city", type text},
+							{"time_taken_min", Int64.Type}
+						},
+						"en-US"
+					),
+					// Source spells it "Metropolitian".
+					AreaType = Table.RenameColumns(
+						Table.ReplaceValue(Typed, "Metropolitian", "Metropolitan", Replacer.ReplaceValue, {"city"}),
+						{{"city", "area_type"}}
+					),
+					WithTrafficOrder = Table.AddColumn(
+						AreaType,
+						"traffic_order",
+						each
+							if [road_traffic_density] = "Low" then 1
+							else if [road_traffic_density] = "Medium" then 2
+							else if [road_traffic_density] = "High" then 3
+							else if [road_traffic_density] = "Jam" then 4
+							else 5,
+						Int64.Type
+					)
+				in
+					WithTrafficOrder
+
+	annotation PBI_ResultType = Table
+

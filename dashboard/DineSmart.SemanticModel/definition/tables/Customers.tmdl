@@ -1,0 +1,203 @@
+/// One row per registered user (100,000): users_clean merged with customer_segments and
+/// customer_retention_predictions. The 22,777 users with no valid order get segment "No orders"
+/// and blank behavioral columns.
+table Customers
+
+	column user_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: user_id
+
+	column age
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: age
+
+	column gender
+		dataType: string
+		summarizeBy: none
+		sourceColumn: gender
+
+	column marital_status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: marital_status
+
+	column occupation
+		dataType: string
+		summarizeBy: none
+		sourceColumn: occupation
+
+	column monthly_income
+		dataType: string
+		summarizeBy: none
+		sourceColumn: monthly_income
+		sortByColumn: income_order
+
+	column income_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: income_order
+
+	column educational_qualifications
+		dataType: string
+		summarizeBy: none
+		sourceColumn: educational_qualifications
+
+	column family_size
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: family_size
+
+	column total_orders
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: total_orders
+
+	column total_spending
+		dataType: double
+		formatString: "₹"#,0
+		summarizeBy: none
+		sourceColumn: total_spending
+
+	column avg_order_value
+		dataType: double
+		formatString: "₹"#,0
+		summarizeBy: none
+		sourceColumn: avg_order_value
+
+	column total_items
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: total_items
+
+	column recency_days
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: recency_days
+
+	column order_frequency
+		dataType: double
+		formatString: 0.0000
+		summarizeBy: none
+		sourceColumn: order_frequency
+
+	column segment
+		dataType: string
+		summarizeBy: none
+		sourceColumn: segment
+		sortByColumn: segment_order
+
+	column segment_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: segment_order
+
+	/// 1 if the customer ordered again in the final 180 days (actual outcome, see customer_prediction.ipynb).
+	column retained
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: retained
+
+	/// Model output at chance level (ROC-AUC ~0.5) - do not use as a KPI.
+	column retention_probability
+		dataType: double
+		formatString: 0.0%
+		summarizeBy: none
+		sourceColumn: retention_probability
+
+	partition Customers = m
+		mode: import
+		source =
+				let
+					LoadCsv = (fileName as text) as table =>
+						Table.PromoteHeaders(
+							Csv.Document(
+								File.Contents(DataFolder & fileName),
+								[Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]
+							),
+							[PromoteAllScalars = true]
+						),
+					Users = Table.TransformColumnTypes(
+						Table.SelectColumns(
+							LoadCsv("users_clean.csv"),
+							{"user_id", "age", "gender", "marital_status", "occupation", "monthly_income", "educational_qualifications", "family_size"}
+						),
+						{
+							{"user_id", Int64.Type}, {"age", Int64.Type}, {"gender", type text},
+							{"marital_status", type text}, {"occupation", type text}, {"monthly_income", type text},
+							{"educational_qualifications", type text}, {"family_size", Int64.Type}
+						},
+						"en-US"
+					),
+					Segments = Table.TransformColumnTypes(
+						Table.SelectColumns(
+							LoadCsv("customer_segments.csv"),
+							{"user_id", "total_orders", "total_spending", "avg_order_value", "total_items", "recency_days", "order_frequency", "segment"}
+						),
+						{
+							{"user_id", Int64.Type}, {"total_orders", Int64.Type}, {"total_spending", type number},
+							{"avg_order_value", type number}, {"total_items", Int64.Type}, {"recency_days", Int64.Type},
+							{"order_frequency", type number}, {"segment", type text}
+						},
+						"en-US"
+					),
+					Predictions = Table.TransformColumnTypes(
+						Table.SelectColumns(
+							LoadCsv("customer_retention_predictions.csv"),
+							{"user_id", "retained", "retention_probability"}
+						),
+						{{"user_id", Int64.Type}, {"retained", Int64.Type}, {"retention_probability", type number}},
+						"en-US"
+					),
+					WithSegments = Table.ExpandTableColumn(
+						Table.NestedJoin(Users, {"user_id"}, Segments, {"user_id"}, "seg", JoinKind.LeftOuter),
+						"seg",
+						{"total_orders", "total_spending", "avg_order_value", "total_items", "recency_days", "order_frequency", "segment"}
+					),
+					WithPredictions = Table.ExpandTableColumn(
+						Table.NestedJoin(WithSegments, {"user_id"}, Predictions, {"user_id"}, "pred", JoinKind.LeftOuter),
+						"pred",
+						{"retained", "retention_probability"}
+					),
+					SegmentFilled = Table.ReplaceValue(WithPredictions, null, "No orders", Replacer.ReplaceValue, {"segment"}),
+					WithSegmentOrder = Table.AddColumn(
+						SegmentFilled,
+						"segment_order",
+						each
+							if [segment] = "High-value" then 1
+							else if [segment] = "Regular" then 2
+							else if [segment] = "Occasional" then 3
+							else if [segment] = "At-risk" then 4
+							else 5,
+						Int64.Type
+					),
+					WithIncomeOrder = Table.AddColumn(
+						WithSegmentOrder,
+						"income_order",
+						each
+							if [monthly_income] = "No Income" then 1
+							else if [monthly_income] = "Below Rs.10000" then 2
+							else if [monthly_income] = "10001 to 25000" then 3
+							else if [monthly_income] = "25001 to 50000" then 4
+							else if [monthly_income] = "More than 50000" then 5
+							else 6,
+						Int64.Type
+					)
+				in
+					WithIncomeOrder
+
+	annotation PBI_ResultType = Table
+

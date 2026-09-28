@@ -1,0 +1,36 @@
+/// Shared date table covering all three domains (Orders 2017-2020, DeliveryOps 2022, OrderHistory 2024-25).
+/// It gives every page the same date axis without connecting the domains to each other.
+table Calendar
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Year = YEAR ( [Date] )
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+
+	/// First day of the month - use as a continuous monthly axis.
+	column Month = DATE ( YEAR ( [Date] ), MONTH ( [Date] ), 1 )
+		dataType: dateTime
+		formatString: mmm yyyy
+		summarizeBy: none
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition Calendar = calculated
+		mode: import
+		source =
+				VAR FirstDate = MIN ( MIN ( Orders[order_date] ), MIN ( MIN ( OrderHistory[OrderDate] ), MIN ( DeliveryOps[order_date] ) ) )
+				VAR LastDate = MAX ( MAX ( Orders[order_date] ), MAX ( MAX ( OrderHistory[OrderDate] ), MAX ( DeliveryOps[order_date] ) ) )
+				RETURN
+					CALENDAR ( DATE ( YEAR ( FirstDate ), 1, 1 ), DATE ( YEAR ( LastDate ), 12, 31 ) )
+

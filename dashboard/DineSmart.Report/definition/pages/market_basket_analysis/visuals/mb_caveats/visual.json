@@ -1,0 +1,56 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "mb_caveats",
+  "position": {
+    "x": 16,
+    "y": 664,
+    "z": 7000,
+    "width": 1248,
+    "height": 52,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Read with care:  ",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "9pt",
+                      "color": "#92400E"
+                    }
+                  },
+                  {
+                    "value": "The strongest rules pair flavor variants of the same dish (e.g. Murgh Amritsari Seekh Pide and Mutton Seekh Pide, lift 9.2), not classic add-ons - the opportunity is mixed-flavor bundles. 84% of orders have only 1-2 items, which limits how many rules exist.",
+                    "textStyle": {
+                      "fontSize": "9pt",
+                      "color": "#92400E"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Only ~12% of orders are rated, so the average rating comes from a small, self-selected group. Customers here can't be linked to the Zomato customers on the other pages.",
+                    "textStyle": {
+                      "fontSize": "9pt",
+                      "color": "#92400E"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

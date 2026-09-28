@@ -1,0 +1,160 @@
+/// One row per restaurant outlet from restaurants_clean. Nearly every outlet has a single order,
+/// so group by name (brand) or metro rather than by r_id for revenue rankings.
+table Restaurants
+
+	column r_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: r_id
+
+	/// Restaurant name. Chain outlets share a name, so this doubles as the brand.
+	column name
+		dataType: string
+		summarizeBy: none
+		sourceColumn: name
+
+	/// Raw location, often "Area,City" (e.g. "Electronic City,Bangalore").
+	column city
+		dataType: string
+		summarizeBy: none
+		sourceColumn: city
+
+	/// City part of the location: the text after the last comma in city.
+	column metro
+		dataType: string
+		summarizeBy: none
+		sourceColumn: metro
+
+	/// Blank for the ~59% of restaurants with no rating yet.
+	column rating
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: rating
+
+	column rating_count
+		dataType: int64
+		formatString: #,0
+		summarizeBy: none
+		sourceColumn: rating_count
+
+	column rating_band
+		dataType: string
+		summarizeBy: none
+		sourceColumn: rating_band
+		sortByColumn: rating_band_order
+
+	column rating_band_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: rating_band_order
+
+	column cuisine
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cuisine
+
+	column cost_for_two
+		dataType: double
+		formatString: "₹"#,0
+		summarizeBy: none
+		sourceColumn: cost_for_two
+
+	column cost_band
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cost_band
+		sortByColumn: cost_band_order
+
+	column cost_band_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: cost_band_order
+
+	partition Restaurants = m
+		mode: import
+		source =
+				let
+					Source = Table.PromoteHeaders(
+						Csv.Document(
+							File.Contents(DataFolder & "restaurants_clean.csv"),
+							[Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]
+						),
+						[PromoteAllScalars = true]
+					),
+					Selected = Table.SelectColumns(Source, {"r_id", "name", "city", "rating", "rating_count", "cuisine", "cost_for_two"}),
+					Typed = Table.TransformColumnTypes(
+						Selected,
+						{
+							{"r_id", Int64.Type}, {"name", type text}, {"city", type text}, {"rating", type number},
+							{"rating_count", Int64.Type}, {"cuisine", type text}, {"cost_for_two", type number}
+						},
+						"en-US"
+					),
+					WithMetro = Table.AddColumn(
+						Typed,
+						"metro",
+						each Text.Trim(if Text.Contains([city], ",") then Text.AfterDelimiter([city], ",", {0, RelativePosition.FromEnd}) else [city]),
+						type text
+					),
+					WithRatingBand = Table.AddColumn(
+						WithMetro,
+						"rating_band",
+						each
+							if [rating] = null then "Not rated"
+							else if [rating] < 3 then "Below 3.0"
+							else if [rating] < 3.5 then "3.0 - 3.4"
+							else if [rating] < 4 then "3.5 - 3.9"
+							else if [rating] < 4.5 then "4.0 - 4.4"
+							else "4.5 - 5.0",
+						type text
+					),
+					WithRatingBandOrder = Table.AddColumn(
+						WithRatingBand,
+						"rating_band_order",
+						each
+							if [rating_band] = "Below 3.0" then 1
+							else if [rating_band] = "3.0 - 3.4" then 2
+							else if [rating_band] = "3.5 - 3.9" then 3
+							else if [rating_band] = "4.0 - 4.4" then 4
+							else if [rating_band] = "4.5 - 5.0" then 5
+							else 6,
+						Int64.Type
+					),
+					WithCostBand = Table.AddColumn(
+						WithRatingBandOrder,
+						"cost_band",
+						each
+							if [cost_for_two] = null then "Unknown"
+							else if [cost_for_two] <= 200 then "Up to 200"
+							else if [cost_for_two] <= 300 then "201 - 300"
+							else if [cost_for_two] <= 400 then "301 - 400"
+							else if [cost_for_two] <= 600 then "401 - 600"
+							else if [cost_for_two] <= 1000 then "601 - 1000"
+							else "Over 1000",
+						type text
+					),
+					WithCostBandOrder = Table.AddColumn(
+						WithCostBand,
+						"cost_band_order",
+						each
+							if [cost_band] = "Up to 200" then 1
+							else if [cost_band] = "201 - 300" then 2
+							else if [cost_band] = "301 - 400" then 3
+							else if [cost_band] = "401 - 600" then 4
+							else if [cost_band] = "601 - 1000" then 5
+							else if [cost_band] = "Over 1000" then 6
+							else 7,
+						Int64.Type
+					)
+				in
+					WithCostBandOrder
+
+	annotation PBI_ResultType = Table
+

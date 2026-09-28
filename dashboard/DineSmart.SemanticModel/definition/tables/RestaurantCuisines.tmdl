@@ -1,0 +1,40 @@
+/// Bridge table: one row per (restaurant, cuisine). Safe for restaurant counts and rating averages
+/// only - summing revenue through it double counts multi-cuisine restaurants.
+/// rating is copied onto the bridge so cuisine-level rating averages work without a
+/// bidirectional relationship to Restaurants.
+table RestaurantCuisines
+
+	column r_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: r_id
+
+	column cuisine
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cuisine
+
+	column rating
+		dataType: double
+		isHidden
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: rating
+
+	partition RestaurantCuisines = m
+		mode: import
+		source =
+				let
+					Source = Table.SelectColumns(Restaurants, {"r_id", "cuisine", "rating"}),
+					SplitToLists = Table.TransformColumns(Source, {{"cuisine", each List.Transform(Text.Split(_, ","), Text.Trim), type list}}),
+					OneCuisinePerRow = Table.ExpandListColumn(SplitToLists, "cuisine"),
+					NonEmpty = Table.SelectRows(OneCuisinePerRow, each [cuisine] <> null and [cuisine] <> ""),
+					Deduplicated = Table.Distinct(NonEmpty, {"r_id", "cuisine"}),
+					Typed = Table.TransformColumnTypes(Deduplicated, {{"cuisine", type text}})
+				in
+					Typed
+
+	annotation PBI_ResultType = Table
+

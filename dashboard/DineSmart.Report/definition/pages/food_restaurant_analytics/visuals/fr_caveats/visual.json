@@ -1,0 +1,56 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "fr_caveats",
+  "position": {
+    "x": 16,
+    "y": 664,
+    "z": 7000,
+    "width": 1248,
+    "height": 52,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Read with care:  ",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "9pt",
+                      "color": "#92400E"
+                    }
+                  },
+                  {
+                    "value": "About 59% of restaurants have no rating yet - rating averages cover rated restaurants only. Cost for two uses the median because a few listings are extreme outliers (up to ~300,000).",
+                    "textStyle": {
+                      "fontSize": "9pt",
+                      "color": "#92400E"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Cities are the part of the location after the last comma (\"Baner,Pune\" counts as Pune). A multi-cuisine restaurant counts once under each of its cuisines.",
+                    "textStyle": {
+                      "fontSize": "9pt",
+                      "color": "#92400E"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

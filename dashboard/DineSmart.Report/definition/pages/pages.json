@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+  "pageOrder": [
+    "business_overview",
+    "customer_analytics",
+    "food_restaurant_analytics",
+    "market_basket_analysis",
+    "delivery_performance"
+  ],
+  "activePageName": "business_overview"
+}

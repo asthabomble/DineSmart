@@ -1,0 +1,24 @@
+relationship 0b6f4c1e-6a57-4d0e-9f7e-2a1c5d8e3b01
+	fromColumn: Orders.user_id
+	toColumn: Customers.user_id
+
+relationship 1c7a5d2f-7b68-4e1f-8a8f-3b2d6e9f4c02
+	fromColumn: Orders.r_id
+	toColumn: Restaurants.r_id
+
+relationship 2d8b6e3a-8c79-4f2a-9b9a-4c3e7fa05d03
+	fromColumn: RestaurantCuisines.r_id
+	toColumn: Restaurants.r_id
+
+relationship 3e9c7f4b-9d8a-4a3b-8cab-5d4f8ab16e04
+	fromColumn: Orders.order_date
+	toColumn: Calendar.Date
+
+relationship 4fad8a5c-ae9b-4b4c-9dbc-6e5a9bc27f05
+	fromColumn: OrderHistory.OrderDate
+	toColumn: Calendar.Date
+
+relationship 5abe9b6d-bfac-4c5d-8ecd-7f6bacd38a06
+	fromColumn: DeliveryOps.order_date
+	toColumn: Calendar.Date
+
