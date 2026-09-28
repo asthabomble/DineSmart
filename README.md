@@ -10,7 +10,7 @@ The project combines data preprocessing, exploratory data analysis, data mining 
 
 ## Status
 
-All data preprocessing, exploratory analysis, and data-mining notebooks are complete and runnable end to end. The Power BI dashboard itself is not yet built - a full data model and DAX reference is ready at [`dashboard/data_model.md`](dashboard/data_model.md) for whoever builds it next.
+All data preprocessing, exploratory analysis, and data-mining notebooks are complete and runnable end to end. The Power BI dashboard is built: [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip) has five pages. They are Business Overview, Customer Analytics, Food & Restaurant Analytics, Market Basket Analysis, and Delivery Performance, covering all three datasets. See [`dashboard/README.md`](dashboard/README.md) for how to open it. The remaining work is writing up the business insights and recommendations.
 
 | Notebook | Component | Key finding |
 | --- | --- | --- |
@@ -133,7 +133,7 @@ Potential features include:
 
 An interactive dashboard will be developed using Microsoft Power BI to provide an overview of the food delivery business.
 
-**Status:** not yet built. [`dashboard/data_model.md`](dashboard/data_model.md) has the full data model (star schema, relationships, Power Query prep steps, and DAX for every metric below) ready to wire up in Power BI Desktop against the CSVs in `Data/processed/`.
+**Status:** built as a Power BI Project at [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip), with the four sections below plus a fifth Delivery Performance page. [`dashboard/README.md`](dashboard/README.md) covers opening it and the numbers to check after the first refresh. [`dashboard/data_model.md`](dashboard/data_model.md) is the design reference.
 
 ### Key Metrics
 
@@ -276,8 +276,11 @@ DineSmart/
 │   └── customer_prediction.ipynb
 |
 ├── dashboard/
+│   ├── README.md
 │   ├── data_model.md
-│   └── DineSmart.pbix        (not yet built)
+│   ├── DineSmart.pbip             (open this in Power BI Desktop)
+│   ├── DineSmart.SemanticModel/   (data model: Power Query, relationships, DAX)
+│   └── DineSmart.Report/          (report pages and visuals)
 |
 ├── requirements.txt
 └── README.md
