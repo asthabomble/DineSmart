@@ -10,7 +10,7 @@ The project combines data preprocessing, exploratory data analysis, data mining 
 
 ## Status
 
-All data preprocessing, exploratory analysis, and data-mining notebooks are complete and runnable end to end. The Power BI dashboard is built: [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip) has five pages. They are Business Overview, Customer Analytics, Food & Restaurant Analytics, Market Basket Analysis, and Delivery Performance, covering all three datasets. See [`dashboard/README.md`](dashboard/README.md) for how to open it. The remaining work is writing up the business insights and recommendations.
+All data preprocessing, exploratory analysis, and data-mining notebooks are complete and runnable end to end. The Power BI dashboard is built: [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip) has five pages. They are Business Overview, Customer Analytics, Food & Restaurant Analytics, Market Basket Analysis, and Delivery Performance, covering all three datasets. See [`dashboard/README.md`](dashboard/README.md) for how to open it. The completed business insights and recommendations are in [`business_insights.md`](business_insights.md).
 
 | Notebook | Component | Key finding |
 | --- | --- | --- |
