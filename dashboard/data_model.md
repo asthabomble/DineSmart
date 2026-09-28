@@ -1,6 +1,8 @@
 # Power BI Data Model
 
-Reference for building `dashboard/DineSmart.pbix` on top of the CSVs in `Data/processed/`. Covers what to import, how to relate it, and the DAX measures for the README's Key Metrics. Written for Power BI Desktop's Power Query + model view + DAX - there's no code to run here, just steps to follow in the app.
+> **Build status:** all three domains and all five pages are built in [`DineSmart.pbip`](DineSmart.pbip) (see [`README.md`](README.md)). Where the build differs from this spec, see [As built](#as-built) at the end.
+
+Reference for building the dashboard on top of the CSVs in `Data/processed/`. Covers what to import, how to relate it, and the DAX measures for the README's Key Metrics. Written for Power BI Desktop's Power Query + model view + DAX - there's no code to run here, just steps to follow in the app.
 
 ## The one rule that matters most: three unrelated domains
 
@@ -52,7 +54,7 @@ The raw datasets are three separate platforms that don't share keys. This carrie
 
 - **`OrderHistory`** - import `order_history_clean.csv` as-is. It's already denormalized (restaurant name/city inline), so no dimension tables needed.
 - **`AssociationRules`** - import `association_rules.csv` as-is. No relationships - it's rule-grain (antecedent/consequent pairs), not order-grain, so it only makes sense as its own table/matrix visual, filtered independently from `OrderHistory`.
-- In Power Query, `order_placed_at` will import with a time component (e.g. `11:38:00 PM, September 10 2024`) - add a calculated `OrderDate = Date.From([order_placed_at])` column before relating it to `Calendar`.
+- In Power Query, `order_placed_at` is a timestamp (`2024-09-10 23:38:00`) - add a calculated `OrderDate = Date.From([order_placed_at])` column before relating it to `Calendar`.
 
 ## Domain 3: Delivery Operations (flat, standalone)
 
@@ -169,3 +171,48 @@ Findings from the notebooks that a dashboard viewer needs to see, not just a dat
 - **Customer segments separate mainly by spend, not recency** (`customer_segmentation.ipynb`) - the At-risk segment is really "low spend, one-time," not necessarily "hasn't ordered in a while."
 - **Retention prediction has no real signal** (`customer_prediction.ipynb`, ROC-AUC ~0.5) - see the card note above.
 - **"Frequently purchased combinations" are mostly same-dish flavor variants** (`market_basket_analysis.ipynb`), not classic cross-sell pairs like the README's pizza/drink example - frame the recommendation opportunity as "flavor combo bundles," not generic upsells.
+
+## As built
+
+These are the places where `DineSmart.pbip` differs from the spec above, each driven by something found in the data while building it.
+
+- **Measures live in a `Key Measures` table**, organized into display folders by page. The table has one hidden placeholder column, which is the standard way to make a measures-only table.
+- **A `DataFolder` parameter** holds the path to `Data/processed/`, because Power BI can't use relative paths.
+- **Top restaurants are ranked by `Restaurants[name]`, not by outlet.**
+  - 146,979 orders are spread across 146,858 outlets, so almost every outlet has exactly one order. A per-outlet top 10 would just show the 10 largest single orders.
+  - Ranking by name adds up all outlets of a chain, so Domino's Pizza comes first.
+- **`Restaurants[metro]` is added** to group revenue by city.
+  - `city` is usually stored as "Area,City" ("Baner,Pune"), with 821 raw values.
+  - `metro` is the text after the last comma, which gives 552 cities.
+- **`RestaurantCuisines` carries a copy of `rating`**, so "average rating by cuisine" works with the single-direction relationship. Without the copy, a cuisine filter can't reach `Restaurants[rating]`, and the only fix would be a bidirectional relationship.
+- **Rating and cost-for-two bands are added** as `rating_band` and `cost_band`, each with a hidden sort column.
+  - About 59% of restaurants are unrated and fall under "Not rated".
+  - `cost_for_two` has extreme outliers (up to 300,350), so the card uses `Median Cost For Two` rather than the average.
+- **`Customers[segment]` is "No orders"** for the 22,777 users with no valid order, instead of blank. Segment and income have sort columns so charts show them in a logical order rather than alphabetically.
+- **`Orders[currency]` is cleaned in Power Query.** 146,702 rows store it as a quoted `"INR\r"`.
+- **Two USD orders are left in `Total Revenue` as-is.** They total ₹750 of ₹963.8M.
+- **Retention is not split by segment. Don't add that chart.**
+  - Segments come from lifetime order counts, which include the orders in the 180-day retention window.
+  - So retention is 36.5% for High-value customers and 0% for single-order segments. That's circular by construction, not a signal.
+  - The Customer Analytics page shows retention by monthly income instead. It's flat at 18.3-19.2%, which matches the notebook's "no signal" result.
+- **`Calendar` spans all three domains**, which cover different years: Orders 2017-2020, DeliveryOps 2022, OrderHistory 2024-25.
+  - The Zomato pages' year slicers use a new `Orders[order_year]` column instead of `Calendar[Year]`, so they list only 2017-2020 and not the years with no Zomato orders.
+
+**Domains 2 and 3**
+
+- **`OrderHistory`:**
+  - Loads only the columns the page needs. `items_in_order` and `review` are dropped because they're large free text.
+  - Adds `OrderDate` and `order_hour` columns, plus a `has_discount` flag.
+  - Empty text fields (discount, cancellation reason, complaint tag) become real blanks.
+- **`DeliveryOps`:**
+  - `city` is renamed to `area_type`, because it holds Metropolitan/Urban/Semi-Urban, not a city. The source's "Metropolitian" typo is fixed.
+  - `road_traffic_density` sorts Low to Jam through a hidden `traffic_order` column.
+- **The Market Basket page adds measures beyond the spec:**
+  - `OH Undelivered Orders` powers the status chart. Without it, Delivered (99%) would dwarf every other status.
+  - `OH Rated Orders` powers the rating chart, since only about 12% of orders are rated.
+  - `OH Discounted Share` shows how many orders used a discount.
+  - It also adds an orders-by-hour chart. That answers the README's "peak ordering periods" question: orders peak from 7 to 10 pm, highest at 8 pm.
+- **The Delivery page adds three cards:**
+  - `Festival Delay (min)`: about +19.5 minutes on festival days.
+  - `Heavily Stacked Share`: trips carrying 2 or more other orders. These take 40-48 minutes, against 23 with no other orders.
+  - `Avg Rider Rating`, which excludes the 53 invalid ratings above 5.
