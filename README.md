@@ -10,17 +10,19 @@ The project combines data preprocessing, exploratory data analysis, data mining 
 
 ## Status
 
-All data preprocessing, exploratory analysis, and data-mining notebooks are complete and runnable end to end. The Power BI dashboard is built: [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip) has five pages. They are Business Overview, Customer Analytics, Food & Restaurant Analytics, Market Basket Analysis, and Delivery Performance, covering all three datasets. See [`dashboard/README.md`](dashboard/README.md) for how to open it. The completed business insights and recommendations are in [`business_insights.md`](business_insights.md).
+All five analysis notebooks are complete, and the five-page Power BI report is built. Its pages cover Business Overview, Customer Analytics, Food & Restaurant Analytics, Market Basket Analysis, and Delivery Performance. The completed [business insights and recommendations](business_insights.md) answer the seven Expected Outcomes using the project results. See [dashboard/README.md](dashboard/README.md) for setup and refresh instructions.
 
-| Notebook | Component | Key finding |
+| Component | Implementation | Status / key finding |
 | --- | --- | --- |
-| [`notebooks/data_preprocessing.ipynb`](notebooks/data_preprocessing.ipynb) | Cleans all three raw datasets into `Data/processed/` | - |
-| [`notebooks/exploratory_analysis.ipynb`](notebooks/exploratory_analysis.ipynb) | Revenue, customer, restaurant, delivery trends | Revenue and order volume are both trending down over the dataset's history |
-| [`notebooks/customer_segmentation.ipynb`](notebooks/customer_segmentation.ipynb) | K-Means customer segmentation | Segments separate mainly by spend and order count; recency has a much smaller effect than expected |
-| [`notebooks/market_basket_analysis.ipynb`](notebooks/market_basket_analysis.ipynb) | Apriori market basket analysis | Top rules are mostly same-dish flavor-variant pairs (e.g. two flavors of the same seekh dish), not classic cross-sell pairs |
-| [`notebooks/customer_prediction.ipynb`](notebooks/customer_prediction.ipynb) | Retention prediction (Logistic Regression, Decision Tree, Random Forest) | Negative result - ROC-AUC ~0.5 for all three models; re-ordering is statistically independent of a customer's own history in this dataset |
+| Data preprocessing | [`notebooks/data_preprocessing.ipynb`](notebooks/data_preprocessing.ipynb) | Complete; cleans all three source datasets into `Data/processed/` |
+| Exploratory analysis | [`notebooks/exploratory_analysis.ipynb`](notebooks/exploratory_analysis.ipynb) | Complete; historical order and revenue trends decline over the Zomato dataset period |
+| Customer segmentation | [`notebooks/customer_segmentation.ipynb`](notebooks/customer_segmentation.ipynb) | Complete; segments separate mainly by spend and order count, with a weaker recency effect |
+| Market basket analysis | [`notebooks/market_basket_analysis.ipynb`](notebooks/market_basket_analysis.ipynb) | Complete; 62 association rules, mostly same-dish flavor pairs |
+| Retention prediction | [`notebooks/customer_prediction.ipynb`](notebooks/customer_prediction.ipynb) | Complete as an analysis; all models are near chance (ROC-AUC ~0.49–0.51), so scores are not a production targeting tool |
+| Power BI dashboard | [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip) | Complete; five report pages cover all three data domains; requires local `DataFolder` setup and refresh |
+| Business insights and recommendations | [`business_insights.md`](business_insights.md) | Complete; answers all seven Expected Outcomes and records interpretation limits |
 
-See each notebook's own summary section for the full reasoning behind these results.
+Each notebook's summary section records its method and interpretation. The run order is documented below.
 
 ---
 
@@ -44,7 +46,7 @@ To re-run them yourself (Python 3.11+ recommended):
 ```bash
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 cd notebooks
 jupyter notebook                   # or: jupyter lab
 ```
@@ -112,17 +114,11 @@ DineSmart aims to transform food delivery data into actionable information by id
 
 ### 1. Customer Segmentation
 
-K-Means Clustering will be used to group customers based on their purchasing behavior.
+The customer segmentation notebook applies K-Means to group customers by purchasing behavior.
 
-Potential features include:
+The clustering uses order count, total spending, average order value, order frequency, and recency.
 
-* Number of orders
-* Total spending
-* Average order value
-* Order frequency
-* Recency of purchase
-
-Possible customer segments:
+The resulting customer segments are:
 
 * High-value customers
 * Regular customers
@@ -135,9 +131,9 @@ Possible customer segments:
 
 ### 2. Market Basket Analysis
 
-Apriori Association Rule Mining will be used to identify food items or categories that are frequently purchased together.
+The market basket notebook applies Apriori association-rule mining to identify food items frequently ordered together.
 
-Example patterns:
+Illustrative examples (not findings from this dataset):
 
 ```text
 Pizza → Coke
@@ -146,7 +142,7 @@ Biryani → Raita
 Pizza → Garlic Bread
 ```
 
-The analysis will use:
+The rules are evaluated using:
 
 * Support
 * Confidence
@@ -160,31 +156,23 @@ These patterns can help identify opportunities for product recommendations, comb
 
 ### 3. Customer Retention Prediction
 
-Machine learning models may be used to identify customers who are likely to place another order or become inactive.
+The retention notebook evaluates whether available customer-history data can predict another order in the following six months.
 
-Potential algorithms include:
+Models evaluated:
 
 * Logistic Regression
 * Decision Tree
 * Random Forest
 
-Potential features include:
+The features tested are order count, total spending, average order value, order frequency, recency, age, and family size.
 
-* Order frequency
-* Total spending
-* Average order value
-* Recency
-* Ratings
-* Discount usage
-* Delivery experience
-
-**Status:** done in [`notebooks/customer_prediction.ipynb`](notebooks/customer_prediction.ipynb), comparing all three named algorithms with a time-based 180-day holdout to avoid leakage. `Ratings`/`Discount usage`/`Delivery experience` come from the Food Delivery Order History dataset, which uses its own anonymized customer ID that doesn't join to the Zomato_Database customers used for this model - so those three features aren't included. **Result: none of the three models beat random chance (ROC-AUC ~0.49-0.51).** Direct correlation checks confirmed there's no signal to find - in this dataset, whether a customer re-orders is statistically independent of their past order count, spend, or recency. Output (`Data/processed/customer_retention_predictions.csv`) should be read as a methodology demonstration, not a production retention score.
+**Status:** done in [`notebooks/customer_prediction.ipynb`](notebooks/customer_prediction.ipynb), comparing all three named algorithms with a time-based 180-day holdout to avoid leakage. `Ratings`/`Discount usage`/`Delivery experience` come from the Food Delivery Order History dataset, which uses its own anonymized customer ID that doesn't join to the Zomato_Database customers used for this model - so those three features aren't included. **Result: none of the three models beat random chance (ROC-AUC ~0.49-0.51).** Direct checks found near-zero feature correlations and almost flat repeat-order rates by order count and recency. The available features do not support useful retention prediction in this dataset. Output (`Data/processed/customer_retention_predictions.csv`) should be read as a methodology demonstration, not a production retention score.
 
 ---
 
 ## Business Intelligence
 
-An interactive dashboard will be developed using Microsoft Power BI to provide an overview of the food delivery business.
+DineSmart includes an interactive Microsoft Power BI dashboard for exploring the analyzed food delivery data.
 
 **Status:** built as a Power BI Project at [`dashboard/DineSmart.pbip`](dashboard/DineSmart.pbip), with the four sections below plus a fifth Delivery Performance page. [`dashboard/README.md`](dashboard/README.md) covers opening it and the numbers to check after the first refresh. [`dashboard/data_model.md`](dashboard/data_model.md) is the design reference.
 
@@ -335,11 +323,12 @@ DineSmart/
 │   ├── DineSmart.SemanticModel/   (data model: Power Query, relationships, DAX)
 │   └── DineSmart.Report/          (report pages and visuals)
 |
+├── business_insights.md
 ├── requirements.txt
 └── README.md
 ```
 
-Every notebook reads from and writes to `Data/processed/` using paths relative to `notebooks/`, so they run correctly from the `notebooks/` working directory without any project installation step.
+Every notebook uses paths relative to `notebooks/`. Install the dependencies and start Jupyter from that directory before running the notebooks in the listed order.
 
 ---
 
@@ -357,7 +346,7 @@ DineSmart uses three public Kaggle datasets, kept under `Data/raw/`. They come f
 
 ## Expected Outcomes
 
-DineSmart aims to answer key business questions such as:
+The completed analyses answer these business questions; findings and recommendations are in [`business_insights.md`](business_insights.md):
 
 * Which customer segments generate the most revenue?
 * What food combinations are frequently ordered together?
@@ -369,7 +358,9 @@ DineSmart aims to answer key business questions such as:
 
 ---
 
-## Future Scope
+## Future Scope (not currently implemented)
+
+The following are possible extensions beyond the completed notebooks, five-page dashboard, and business insights report:
 
 * Real-time food delivery analytics
 * Personalized food recommendation system
