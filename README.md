@@ -79,21 +79,112 @@ To check that the data loaded correctly, compare the KPI cards with the expected
 
 ---
 
-## Problem Statement
+## Problem and Solution
 
-Food delivery platforms generate large volumes of data from customer orders, restaurants, food categories, ratings, delivery times, locations, and purchasing behavior.
+### The problem
 
-However, raw transactional data alone does not provide meaningful business insights.
+A food delivery platform records every order, customer, restaurant, menu item and delivery, but the raw tables can't answer business questions on their own. The table `orders.csv` has 146,979 rows of dates, amounts and IDs, and none of them say on its own *why revenue is falling*, *which customers matter most* or *why deliveries are late*.
 
-DineSmart aims to transform food delivery data into actionable information by identifying:
+The platform needs to know:
 
-* Customer segments and purchasing behavior
-* Popular food categories and restaurants
-* Peak ordering periods
-* Frequently ordered food combinations
-* High-value and low-engagement customers
-* Factors affecting customer retention
-* Business opportunities for improving sales and customer engagement
+1. Is the business growing or shrinking, and where does the money come from?
+2. Which customers bring in the revenue, and which ones are slipping away?
+3. Which dishes are ordered together, so they can be sold as combos?
+4. When and where do orders peak?
+5. What makes deliveries slow?
+6. Can we predict which customers will order again?
+
+### The solution
+
+DineSmart turns the raw tables into answers in four steps:
+
+1. **Clean** the three raw datasets (missing values, bad formats, broken IDs) into `Data/processed/`.
+2. **Explore** the cleaned tables to find trends by time, city and area.
+3. **Mine** them with K-Means (customer segments), Apriori (dishes ordered together) and classification models (retention).
+4. **Show** the results in a five-page Power BI dashboard that a manager can filter without writing code.
+
+### Demo walkthrough: from table to insight
+
+Each finding below says which table it comes from, which region it covers, what the data shows, and what the business should do about it. All numbers come straight from the CSVs in `Data/processed/`.
+
+#### Finding 1: Revenue is shrinking
+
+| | |
+|---|---|
+| **Table** | `orders_clean.csv` (`order_date`, `sales_amount`) joined to `restaurants_clean.csv` (`city`) on `r_id` |
+| **Region** | All of India: 820 cities and city areas, Oct 2017 to Jun 2020 |
+| **What the data shows** | Revenue fell from ₹402.9M in 2018 to ₹331.3M in 2019 (-17.8%). The first half of 2020 brought ₹140.4M, about ₹23M a month against ₹34M a month in 2018. The top earning areas are Tirupati (₹42.5M), Electronic City, Bangalore (₹28.6M), Baner, Pune (₹26.8M), Raipur (₹22.6M) and Malviya Nagar, Delhi (₹16.5M). Together these five bring in only 14% of revenue, so sales are spread thin across many cities. |
+| **Solution** | Look at why volume is dropping (fewer orders, not smaller orders) and protect the top cities first with targeted offers, since they give the most return per rupee spent. |
+| **See it in** | `exploratory_analysis.ipynb`, dashboard page **Business Overview** |
+
+#### Finding 2: A quarter of customers bring in three quarters of the money
+
+| | |
+|---|---|
+| **Table** | `customer_segments.csv`, built from `orders_clean.csv` + `users_clean.csv` by K-Means on orders, spend, order value and recency |
+| **Region** | All of India, 77,223 customers who ordered at least once |
+| **What the data shows** | **High-value** customers (21,280, about 28%) bring in **74.1%** of all spending. **Occasional** customers (12,619) order once but spend big, ₹16,438 per order on average, and bring in 21.7%. **Regular** customers (21,854) order often but spend little (3.4%). **At-risk** customers (21,470) placed one small order about 540 days ago and bring in 0.7%. |
+| **Solution** | Spend retention budget on High-value customers (loyalty rewards, priority support). Give Occasional customers a reason to place a second order. Send At-risk customers a cheap win-back offer, or nothing at all, since they are worth little. |
+| **See it in** | `customer_segmentation.ipynb`, dashboard page **Customer Analytics** |
+
+#### Finding 3: Customers buy two flavors of the same dish together
+
+| | |
+|---|---|
+| **Table** | `order_history_clean.csv` (`items_in_order`), mined into `association_rules.csv` with Apriori |
+| **Region** | Delhi NCR, Sep 2024 to Jan 2025, 21,321 orders |
+| **What the data shows** | The strongest rule is *Murgh Amritsari Seekh Pide → Mutton Seekh Pide*: a customer who orders the first is **9.2 times** more likely than average to also order the second. Most of the 62 rules found are like this, two flavors of the same dish (e.g. *Grilled Chicken Jamaican Tender → Grilled Chicken Smoky BBQ Tender*, lift 6.1), not the classic "burger + fries" pairs. |
+| **Solution** | Sell "mixed flavor" combos (two flavors of one dish at a small discount) instead of generic add-ons, and show the paired flavor as a suggestion when one is added to the cart. |
+| **See it in** | `market_basket_analysis.ipynb`, dashboard page **Market Basket Analysis** |
+
+#### Finding 4: Orders peak in the evening, in two areas of Delhi
+
+| | |
+|---|---|
+| **Table** | `order_history_clean.csv` (`order_placed_at`, `subzone`, `order_status`) |
+| **Region** | Delhi NCR subzones: Greater Kailash 2, Sector 4, DLF Phase 1, Sector 135, Vasant Kunj, Shahdara |
+| **What the data shows** | **44%** of orders come in between 7 pm and 11 pm, peaking at 8 pm (2,912 orders). Greater Kailash 2 (7,380 orders) and Sector 4 (6,530) together account for **65%** of orders. 99.1% of orders are delivered; 158 were rejected by the restaurant. |
+| **Solution** | Schedule more riders and kitchen staff from 7 to 11 pm in GK2 and Sector 4, and run promotions in the quiet afternoon hours (11 am to 5 pm) to spread demand. |
+| **See it in** | `exploratory_analysis.ipynb`, dashboard page **Market Basket Analysis** |
+
+#### Finding 5: Traffic, festivals and stacked orders slow deliveries down
+
+| | |
+|---|---|
+| **Table** | `delivery_ops_clean.csv` (`time_taken_min`, `road_traffic_density`, `festival`, `weather_conditions`, `multiple_deliveries`, `city`) |
+| **Region** | Indian cities grouped by type: Metropolitan, Urban, Semi-Urban; 45,584 deliveries |
+| **What the data shows** | The average delivery takes 26.3 min. It takes **45.5 min on festival days** against 26.0 min on normal days (+19.5 min). It takes 31.2 min in traffic jams against 21.3 min in low traffic, and 21.9 min in sunny weather against 28.9 min in fog or cloud. A rider carrying 3 extra orders takes 47.8 min against 22.9 min with none. Metropolitan deliveries average 27.3 min and Urban 23.0 min. |
+| **Solution** | Add riders on festival days, limit how many orders one rider can stack (at most 1 extra), and show longer delivery estimates when traffic is heavy or the weather is bad, so customers aren't let down. |
+| **See it in** | `exploratory_analysis.ipynb`, dashboard page **Delivery Performance** |
+
+#### Finding 6: Re-ordering can't be predicted from order history
+
+| | |
+|---|---|
+| **Table** | `customer_features.csv` → `customer_retention_predictions.csv` |
+| **Region** | All of India, 71,689 customers with enough history to test |
+| **What the data shows** | Only **19.0%** of customers ordered again in the 180-day test window. Logistic Regression, Decision Tree and Random Forest all scored ROC-AUC of about 0.5, the same as a coin toss. A customer's past orders, spend and recency don't tell us whether they will come back. |
+| **Solution** | Don't build retention campaigns on order history alone. Collect the data that's missing (ratings, complaints, delivery experience, discounts used) for the same customer IDs, then try again. This is a useful negative result: it stops the business from trusting a model that doesn't work. |
+| **See it in** | `customer_prediction.ipynb`, dashboard page **Customer Analytics** (Historical Retention Rate card) |
+
+### How the data flows
+
+```text
+Data/raw/                              notebooks/                    Data/processed/                     Dashboard page
+-----------------------------------    --------------------------    --------------------------------    ---------------------------
+Zomato_Database/                       data_preprocessing            users, restaurants, food,           Business Overview
+  users, restaurant, food,       --->  exploratory_analysis    --->  menu, orders _clean.csv       --->  Customer Analytics
+  menu, orders .csv                    customer_segmentation         customer_segments.csv               Food & Restaurant Analytics
+                                       customer_prediction           customer_retention_predictions.csv
+
+Food Delivery Order History Data/ ---> data_preprocessing      --->  order_history_clean.csv       --->  Market Basket Analysis
+  order_history_kaggle_data.csv        market_basket_analysis        association_rules.csv
+
+Zomato Delivery Operations       ---> data_preprocessing      --->  delivery_ops_clean.csv        --->  Delivery Performance
+  Zomato Dataset.csv                   exploratory_analysis
+```
+
+The three datasets don't share customer or restaurant IDs, so each one is analyzed separately and each dashboard page uses only its own dataset.
 
 ---
 
